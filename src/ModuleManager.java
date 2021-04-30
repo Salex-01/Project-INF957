@@ -77,16 +77,16 @@ public class ModuleManager extends Thread {
                     inMessage = Network.getMessage(dis, dos, log);
                 } catch (Exception e) {
                     consecutiveFailures++;
-                    Network.send(Constants.badMessage, dos, log);
+                    Network.send(Common.Constants.badMessage, dos, log);
                     if (consecutiveFailures == 10) {
                         return;
                     }
                     continue;
                 }
                 consecutiveFailures = 0;
-                int index = inMessage.indexOf(Constants.separator);
+                int index = inMessage.indexOf(Common.Constants.separator);
                 String destination = inMessage.substring(0, index);
-                String message = inMessage.substring(index + Constants.separator.length());
+                String message = inMessage.substring(index + Common.Constants.separator.length());
                 String outMessage;
                 Pair<DataInputStream, DataOutputStream> service;
                 synchronized (moduleConnections) {

@@ -7,7 +7,7 @@ public class Network {
         try {
             return dis.readInt();
         } catch (IOException e) {
-            notifyError(Constants.couldNotReadSize, dos, log);
+            notifyError(Common.Constants.couldNotReadSize, dos, log);
             return null;
         }
     }
@@ -22,7 +22,7 @@ public class Network {
                 }
                 i += l;
             } catch (IOException e) {
-                notifyError(Constants.messageWrongSize, dos, log);
+                notifyError(Common.Constants.messageWrongSize, dos, log);
                 return null;
             }
         }
@@ -41,7 +41,7 @@ public class Network {
             dos.flush();
             return true;
         } catch (IOException e) {
-            notifyError(Constants.couldNotSendMessage, dos, log);
+            notifyError(Common.Constants.couldNotSendMessage, dos, log);
             return false;
         }
     }

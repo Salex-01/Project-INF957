@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 
 public class CentralServer extends Thread {
     ServerSocket server;
@@ -33,40 +32,14 @@ public class CentralServer extends Thread {
         getMMparams();
     }
 
-    @SuppressWarnings("deprecation")
     private void getMMparams() throws IOException, MissingConfigException {
-        DataInputStream cf;
-        String line;
-        String[] split;
-        cf = new DataInputStream(new FileInputStream(configFile));
-        line = cf.readLine();
-        while (line != null && !line.startsWith("moduleManager")) {
-            line = cf.readLine();
-        }
-        cf.close();
-        if (line == null) {
-            throw new MissingConfigException();
-        }
-        split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
-        moduleManagerHost = (split.length == 3 ? split[1] : server.getInetAddress().getHostAddress());
-        moduleManagerPort = Integer.parseInt(split[split.length - 1]);
+        Pair<String, Integer> p = Common.getMMparams(configFile, server);
+        moduleManagerHost = p.key;
+        moduleManagerPort = p.value;
     }
 
-    @SuppressWarnings("deprecation")
     private int getPort() throws IOException, MissingConfigException {
-        int port;
-        DataInputStream cf = new DataInputStream(new FileInputStream(configFile));
-        String line = cf.readLine();
-        while (line != null && !line.startsWith("central")) {
-            line = cf.readLine();
-        }
-        cf.close();
-        if (line == null) {
-            throw new MissingConfigException();
-        }
-        String[] split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
-        port = Integer.parseInt(split[split.length - 1]);
-        return port;
+        return Common.getPort(configFile, "central");
     }
 
     @Override
@@ -111,32 +84,32 @@ public class CentralServer extends Thread {
                 if (inMessage == null) {
                     continue;
                 }
-                String[] message = inMessage.split(Constants.separator);
+                String[] message = inMessage.split(Common.Constants.separator);
                 String outMessage;
                 switch (message[0]) {
                     case "new account":
-                        outMessage = accountManagerExecute("new ", message,
-                                Constants.couldNotCreateAccount, Constants.accountCreated);
+                        outMessage = accountManagerExecute("new", message,
+                                Common.Constants.couldNotCreateAccount, Common.Constants.accountCreated);
                         break;
                     case "delete account":
-                        outMessage = accountManagerExecute("delete ", message,
-                                Constants.couldNotDeleteAccount, Constants.accountDeleted);
+                        outMessage = accountManagerExecute("delete", message,
+                                Common.Constants.couldNotDeleteAccount, Common.Constants.accountDeleted);
                         break;
                     case "follow":
-                        outMessage = followManagerExecute("add ", message,
-                                Constants.cantFollow + message[2], Constants.followed + message[2]);
+                        outMessage = followManagerExecute("add", message,
+                                Common.Constants.cantFollow + message[2], Common.Constants.followed + message[2]);
                         break;
                     case "unfollow":
-                        outMessage = followManagerExecute("remove ", message,
-                                Constants.cantUnfollow + message[2], Constants.unfollowed + message[2]);
+                        outMessage = followManagerExecute("remove", message,
+                                Common.Constants.cantUnfollow + message[2], Common.Constants.unfollowed + message[2]);
                         break;
                     case "post":
-                        outMessage = messageManagerExecute("post ", message,
-                                Constants.cantPostMessage, Constants.posted);
+                        outMessage = messageManagerExecute("post", message,
+                                Common.Constants.cantPostMessage, Common.Constants.posted);
                         break;
                     case "get":
-                        outMessage = messageManagerExecute("get ", message,
-                                Constants.cantGetMessages, null);
+                        outMessage = messageManagerExecute("get", message,
+                                Common.Constants.cantGetMessages, null);
                         break;
                     case "close":
                         return;
@@ -151,7 +124,7 @@ public class CentralServer extends Thread {
         }
 
         private String accountManagerExecute(String s, String[] paramas, String failureMessage, String successMessage) {
-            if (!Network.send("accountManager" + Constants.separator + s + paramas[1], toMM, log)) {
+            if (!Network.send("accountManager" + Common.Constants.separator + s + Common.Constants.separator + paramas[1], toMM, log)) {
                 reconnectIfNull(null);
                 return failureMessage;
             }
@@ -165,7 +138,7 @@ public class CentralServer extends Thread {
         }
 
         private String followManagerExecute(String s, String[] params, String failureMessage, String successMessage) {
-            if (!Network.send("followManager" + Constants.separator + s + params[1] + Constants.separator + params[2], toMM, log)) {
+            if (!Network.send("followManager" + Common.Constants.separator + s + Common.Constants.separator + params[1] + Common.Constants.separator + params[2], toMM, log)) {
                 reconnectIfNull(null);
                 return failureMessage;
             }
@@ -179,7 +152,7 @@ public class CentralServer extends Thread {
         }
 
         private String messageManagerExecute(String s, String[] params, String failureMessage, String successMessage) {
-            if (!Network.send("messageManager" + Constants.separator + s + params[1] + Constants.separator + params[2], toMM, log)) {
+            if (!Network.send("messageManager" + Common.Constants.separator + s + Common.Constants.separator + params[1] + Common.Constants.separator + params[2], toMM, log)) {
                 reconnectIfNull(null);
                 return failureMessage;
             }
@@ -206,29 +179,9 @@ public class CentralServer extends Thread {
             if (fromMM != null || toMM != null) {
                 getMMparams();
             }
-            if (fromMM != null) {
-                fromMM.close();
-            }
-            if (toMM != null) {
-                toMM.close();
-            }
-            Socket moduleManagerSocket = null;
-            boolean tem;
-            do {
-                tem = false;
-                try {
-                    moduleManagerSocket = new Socket(moduleManagerHost, moduleManagerPort);
-                } catch (Exception e) {
-                    System.out.println("Module manager unreachable at " + moduleManagerHost + ":" + moduleManagerPort);
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException ignored) {
-                    }
-                    tem = true;
-                }
-            } while (tem);
-            fromMM = new DataInputStream(new BufferedInputStream(moduleManagerSocket.getInputStream()));
-            toMM = new DataOutputStream(new BufferedOutputStream(moduleManagerSocket.getOutputStream()));
+            Pair<DataInputStream, DataOutputStream> p = Common.connectToMM(fromMM, toMM, moduleManagerHost, moduleManagerPort);
+            fromMM = p.key;
+            toMM = p.value;
         }
     }
 }
