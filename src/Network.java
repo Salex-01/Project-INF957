@@ -22,31 +22,40 @@ public class Network {
                 }
                 i += l;
             } catch (IOException e) {
-                notifyError(Constants.couldNotReadMessage, dos, log);
+                notifyError(Constants.messageWrongSize, dos, log);
                 return null;
             }
         }
         return new String(tmp);
     }
 
-    static void send(String message, DataOutputStream dos, boolean log) {
+    static String getMessage(DataInputStream dis, DataOutputStream dos, boolean log) {
+        return getMessage(getSize(dis, dos, log), dis, dos, log);
+    }
+
+    static boolean send(String message, DataOutputStream dos, boolean log) {
         try {
             dos.writeInt(0);
             dos.writeInt(message.getBytes().length);
             dos.writeBytes(message);
             dos.flush();
+            return true;
         } catch (IOException e) {
             notifyError(Constants.couldNotSendMessage, dos, log);
+            return false;
         }
     }
 
     static void notifyError(String message, DataOutputStream dos, boolean log) {
         try {
-            dos.writeInt(-1);
-            dos.writeInt(message.getBytes().length);
-            dos.writeBytes(message);
-            dos.flush();
-        } catch (IOException e) {
+            if (dos != null) {
+                dos.writeInt(-1);
+                dos.writeInt(message.getBytes().length);
+                dos.writeBytes(message);
+                dos.flush();
+            }
+        } catch (IOException ignored) {
+        } finally {
             if (log) {
                 System.out.println(message);
             }
