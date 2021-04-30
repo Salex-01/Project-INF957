@@ -1,0 +1,2 @@
+central 127.0.0.1 8666
+moduleManager 127.0.0.1 8667

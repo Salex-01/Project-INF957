@@ -14,7 +14,6 @@ public class CentralServer extends Thread {
         new CentralServer(args).start();
     }
 
-    @SuppressWarnings("deprecation")
     public CentralServer(String[] args) throws IOException, MissingConfigException {
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -30,30 +29,44 @@ public class CentralServer extends Thread {
                     System.exit(-1);
             }
         }
-        int port;
-        DataInputStream cf = new DataInputStream(new FileInputStream(configFile));
-        String line = cf.readLine();
-        while (line != null && !line.startsWith("central")) {
-            line = cf.readLine();
-        }
-        if (line == null) {
-            throw new MissingConfigException();
-        }
-        String[] split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
-        port = Integer.parseInt(split[split.length - 1]);
-        cf.close();
+        server = new ServerSocket(getPort());
+        getMMparams();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void getMMparams() throws IOException, MissingConfigException {
+        DataInputStream cf;
+        String line;
+        String[] split;
         cf = new DataInputStream(new FileInputStream(configFile));
         line = cf.readLine();
         while (line != null && !line.startsWith("moduleManager")) {
             line = cf.readLine();
         }
+        cf.close();
         if (line == null) {
             throw new MissingConfigException();
         }
         split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
         moduleManagerHost = (split.length == 3 ? split[1] : server.getInetAddress().getHostAddress());
         moduleManagerPort = Integer.parseInt(split[split.length - 1]);
-        server = new ServerSocket(port);
+    }
+
+    @SuppressWarnings("deprecation")
+    private int getPort() throws IOException, MissingConfigException {
+        int port;
+        DataInputStream cf = new DataInputStream(new FileInputStream(configFile));
+        String line = cf.readLine();
+        while (line != null && !line.startsWith("central")) {
+            line = cf.readLine();
+        }
+        cf.close();
+        if (line == null) {
+            throw new MissingConfigException();
+        }
+        String[] split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
+        port = Integer.parseInt(split[split.length - 1]);
+        return port;
     }
 
     @Override
@@ -62,7 +75,7 @@ public class CentralServer extends Thread {
         while (true) {
             try {
                 new WorkerThread(server.accept()).start();
-            } catch (IOException ignored) {
+            } catch (IOException | MissingConfigException ignored) {
                 System.out.println("crash du serveur");
             }
         }
@@ -75,7 +88,7 @@ public class CentralServer extends Thread {
         DataInputStream fromMM;
         DataOutputStream toMM;
 
-        public WorkerThread(Socket s) throws IOException {
+        public WorkerThread(Socket s) throws IOException, MissingConfigException {
             socket = s;
             dis = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             dos = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -183,13 +196,16 @@ public class CentralServer extends Thread {
             if (check == null) {
                 try {
                     connectToMM();
-                } catch (IOException e) {
+                } catch (IOException | MissingConfigException e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        private void connectToMM() throws IOException {
+        private void connectToMM() throws IOException, MissingConfigException {
+            if (fromMM != null || toMM != null) {
+                getMMparams();
+            }
             if (fromMM != null) {
                 fromMM.close();
             }
