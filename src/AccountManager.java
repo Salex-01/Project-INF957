@@ -1,6 +1,8 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.LinkedList;
 
 public class AccountManager extends Thread {
     ServerSocket server;
@@ -8,6 +10,7 @@ public class AccountManager extends Thread {
     String moduleManagerHost;
     int moduleManagerPort;
     String configFile = "./modulesConfig.txt";
+    final LinkedList<String> accounts = new LinkedList<>();
 
     public static void main(String[] args) throws IOException, MissingConfigException {
         new AccountManager(args).start();
@@ -69,18 +72,43 @@ public class AccountManager extends Thread {
         }
 
         @Override
+        @SuppressWarnings("InfiniteLoopStatement")
         public void run() {
             while (true) {
-
-            }
-        }
-
-        private void reconnectIfNull(String check) {
-            if (check == null) {
-                try {
-                    connectToMM();
-                } catch (IOException | MissingConfigException e) {
-                    e.printStackTrace();
+                String message = Network.getMessage(dis, null, log);
+                String[] split = (String[]) Arrays.stream(message.split(Common.Constants.separator)).filter(s -> !s.contentEquals("")).toArray();
+                if (split.length != 2) {
+                    Network.send(Common.Constants.badMessage, dos, log);
+                    continue;
+                }
+                switch (split[0]) {
+                    case "new":
+                        synchronized (accounts) {
+                            if (accounts.contains(split[1])) {
+                                Network.send(Common.Constants.couldNotCreateAccount, dos, log);
+                            } else {
+                                accounts.add(split[1]);
+                                Network.send(Common.Constants.accountCreated, dos, log);
+                            }
+                        }
+                        break;
+                    case "delete":
+                        synchronized (accounts) {
+                            if (!accounts.remove(split[1])) {
+                                Network.send(Common.Constants.couldNotDeleteAccount, dos, log);
+                            } else {
+                                Network.send(Common.Constants.accountDeleted, dos, log);
+                            }
+                        }
+                        break;
+                    case "get":
+                        synchronized (accounts) {
+                            Network.send("ok" + accounts.contains(split[1]), dos, log);
+                        }
+                        break;
+                    default:
+                        //TODO
+                        break;
                 }
             }
         }

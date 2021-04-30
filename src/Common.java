@@ -7,7 +7,7 @@ public class Common {
     public static class Constants {
         static String accountCreated = "Account created";
         static String accountDeleted = "Account deleted";
-        static String badMessage = "Could not read message";
+        static String badMessage = "Message format is incorrect";
         static String cantFollow = "Failed to follow ";
         static String cantUnfollow = "Failed to unfollow ";
         static String cantGetMessages = "Failed to get new messages";
