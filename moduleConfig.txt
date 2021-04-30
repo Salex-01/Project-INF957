@@ -1,2 +1,5 @@
 central 127.0.0.1 8666
 moduleManager 127.0.0.1 8667
+accountManager 127.0.0.1 8668
+followManager 127.0.0.1 8669
+messageManager 127.0.0.1 8670
