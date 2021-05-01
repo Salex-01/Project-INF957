@@ -36,8 +36,7 @@ public class Common {
         if (line == null) {
             throw new MissingConfigException();
         }
-        String[] split;
-        split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
+        String[] split = splitOnSeparator(line, " ");
         String moduleManagerHost = (split.length == 3 ? split[1] : server.getInetAddress().getHostAddress());
         Integer moduleManagerPort = Integer.parseInt(split[split.length - 1]);
         return new Pair<>(moduleManagerHost, moduleManagerPort);
@@ -46,6 +45,7 @@ public class Common {
     @SuppressWarnings("deprecation")
     static int getPort(String configFile, String module) throws IOException, MissingConfigException {
         int port;
+        System.out.println(new File(configFile).getAbsolutePath());
         DataInputStream cf = new DataInputStream(new FileInputStream(configFile));
         String line = cf.readLine();
         while (line != null && !line.startsWith(module)) {
@@ -55,9 +55,21 @@ public class Common {
         if (line == null) {
             throw new MissingConfigException();
         }
-        String[] split = (String[]) Arrays.stream(line.trim().split(" ")).filter(s -> !s.contentEquals("")).toArray();
+        String[] split = splitOnSeparator(line, " ");
         port = Integer.parseInt(split[split.length - 1]);
         return port;
+    }
+
+    static String[] splitOnSeparator(String base, String sep) {
+        return toStringArray(Arrays.stream(base.trim().split(sep)).filter(s -> !s.contentEquals("")).toArray());
+    }
+
+    static String[] toStringArray(Object[] o) {
+        String[] res = new String[o.length];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = (String) o[i];
+        }
+        return res;
     }
 
     static Pair<DataInputStream, DataOutputStream> connectToMM(DataInputStream fromMM, DataOutputStream toMM, String moduleManagerHost, int moduleManagerPort) throws IOException {

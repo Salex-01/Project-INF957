@@ -9,7 +9,7 @@ public class AccountManager extends Thread {
     boolean log = false;
     String moduleManagerHost;
     int moduleManagerPort;
-    String configFile = "./modulesConfig.txt";
+    String configFile = "modulesConfig.txt";
     final LinkedList<String> accounts = new LinkedList<>();
 
     public static void main(String[] args) throws IOException, MissingConfigException {
@@ -76,7 +76,7 @@ public class AccountManager extends Thread {
         public void run() {
             while (true) {
                 String message = Network.getMessage(dis, null, log);
-                String[] split = (String[]) Arrays.stream(message.split(Common.Constants.separator)).filter(s -> !s.contentEquals("")).toArray();
+                String[] split = Common.splitOnSeparator(message, Common.Constants.separator);
                 if (split.length != 2) {
                     Network.send(Common.Constants.badMessage, dos, log);
                     continue;
@@ -88,7 +88,7 @@ public class AccountManager extends Thread {
                                 Network.send(Common.Constants.couldNotCreateAccount, dos, log);
                             } else {
                                 accounts.add(split[1]);
-                                Network.send(Common.Constants.accountCreated, dos, log);
+                                Network.send("ok" + Common.Constants.accountCreated, dos, log);
                             }
                         }
                         break;
@@ -97,7 +97,7 @@ public class AccountManager extends Thread {
                             if (!accounts.remove(split[1])) {
                                 Network.send(Common.Constants.couldNotDeleteAccount, dos, log);
                             } else {
-                                Network.send(Common.Constants.accountDeleted, dos, log);
+                                Network.send("ok" + Common.Constants.accountDeleted, dos, log);
                             }
                         }
                         break;

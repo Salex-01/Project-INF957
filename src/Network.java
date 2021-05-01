@@ -35,7 +35,6 @@ public class Network {
 
     static boolean send(String message, DataOutputStream dos, boolean log) {
         try {
-            dos.writeInt(0);
             dos.writeInt(message.getBytes().length);
             dos.writeBytes(message);
             dos.flush();
@@ -49,7 +48,6 @@ public class Network {
     static void notifyError(String message, DataOutputStream dos, boolean log) {
         try {
             if (dos != null) {
-                dos.writeInt(-1);
                 dos.writeInt(message.getBytes().length);
                 dos.writeBytes(message);
                 dos.flush();

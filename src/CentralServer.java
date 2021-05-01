@@ -1,13 +1,14 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class CentralServer extends Thread {
     ServerSocket server;
     boolean log = false;
     String moduleManagerHost;
     int moduleManagerPort;
-    String configFile = "./modulesConfig.txt";
+    String configFile = "modulesConfig.txt";
 
     public static void main(String[] args) throws IOException, MissingConfigException {
         new CentralServer(args).start();
@@ -48,7 +49,7 @@ public class CentralServer extends Thread {
         while (true) {
             try {
                 new WorkerThread(server.accept()).start();
-            } catch (IOException | MissingConfigException ignored) {
+            } catch (IOException | MissingConfigException e) {
                 System.out.println("crash du serveur");
             }
         }
@@ -84,7 +85,7 @@ public class CentralServer extends Thread {
                 if (inMessage == null) {
                     continue;
                 }
-                String[] message = inMessage.split(Common.Constants.separator);
+                String[] message = Common.splitOnSeparator(inMessage, Common.Constants.separator);
                 String outMessage;
                 switch (message[0]) {
                     case "new account":
@@ -179,7 +180,21 @@ public class CentralServer extends Thread {
             if (fromMM != null || toMM != null) {
                 getMMparams();
             }
-            Pair<DataInputStream, DataOutputStream> p = Common.connectToMM(fromMM, toMM, moduleManagerHost, moduleManagerPort);
+            Pair<DataInputStream, DataOutputStream> p = null;
+            boolean tem;
+            do {
+                tem = false;
+                try {
+                    p = Common.connectToMM(fromMM, toMM, moduleManagerHost, moduleManagerPort);
+                } catch (IOException e) {
+                    tem = true;
+                    System.out.println("MM unreachable");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            } while (tem);
             fromMM = p.key;
             toMM = p.value;
         }

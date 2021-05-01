@@ -8,7 +8,7 @@ public class ModuleManager extends Thread {
     ServerSocket server;
     boolean log = false;
     final HashMap<String, Pair<DataInputStream, DataOutputStream>> moduleConnections = new HashMap<>();
-    String configFile = "./modulesConfig.txt";
+    String configFile = "modulesConfig.txt";
 
     public static void main(String[] args) throws IOException, MissingConfigException {
         new ModuleManager(args).start();
@@ -122,7 +122,11 @@ public class ModuleManager extends Thread {
                     moduleConnections.clear();
                     String line = is.readLine();
                     while (line != null) {
-                        String[] split = (String[]) Arrays.stream(line.split(" ")).filter(s -> !s.contentEquals("")).toArray();
+                        if (line.startsWith("//") || line.startsWith("moduleManager")) {
+                            line = is.readLine();
+                            continue;
+                        }
+                        String[] split = Common.splitOnSeparator(line, " ");
                         System.out.println("Connecting to " + split[0]);
                         String serviceAddress = (split.length == 3 ? split[1] : server.getInetAddress().getHostAddress());
                         int servicePort = Integer.parseInt(split[split.length - 1]);

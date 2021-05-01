@@ -6,6 +6,10 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 public class Client extends Thread {
+    public static void main(String[] args) throws IOException {
+        new Client(args).start();
+    }
+
     public Client(String[] args) throws IOException {
         String address = null;
         int port = 8666;
@@ -27,11 +31,13 @@ public class Client extends Thread {
         Socket s = new Socket(address, port);
         DataInputStream is = new DataInputStream(new DataInputStream(s.getInputStream()));
         DataOutputStream os = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
-        String[] testMessages = {"post", "get", "fsdjfjsh"};
+        String[] testMessages = {
+                "new account" + Common.Constants.separator + "test",
+                "delete account" + Common.Constants.separator + "test"
+        };
         for (String message : testMessages) {
-            os.writeInt(message.getBytes(StandardCharsets.UTF_8).length);
-            os.writeBytes(message);
-            os.flush();
+            Network.send(message, os, false);
+            System.out.println(Network.getMessage(is, null, false));
         }
     }
 }
