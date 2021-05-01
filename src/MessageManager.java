@@ -1,35 +1,24 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 
-public class MessageManager extends Thread{
-
+public class MessageManager extends Thread {
     ServerSocket server;
     boolean log = false;
     String moduleManagerHost;
     int moduleManagerPort;
-    String configFile = "./modulesConfig.txt";
-    final LinkedList<Messages> messages = new LinkedList<Messages>();
-
-    class Messages {
-
-        String pseudo;
-        LinkedList<Message> messages;
-
-        Messages(String pseudo) {
-            this.pseudo = pseudo;
-            messages = new LinkedList<Message>();
-        }
-    }
+    String configFile = "modulesConfig.txt";
+    final HashMap<String, LinkedList<Message>> messages = new HashMap<>();
 
     static class Message {
-        static double counter = 0;
+        static long counter = 0;
+        long id = counter++;
         String message;
-        double id;
+
         Message(String message) {
-            id = counter ++;
             this.message = message;
         }
     }
@@ -74,7 +63,7 @@ public class MessageManager extends Thread{
             try {
                 new MessageManager.WorkerThread(server.accept()).start();
             } catch (IOException | MissingConfigException ignored) {
-                System.out.println("crash du serveur");
+                System.out.println("crash du Mesmer");
             }
         }
     }
@@ -99,53 +88,51 @@ public class MessageManager extends Thread{
         public void run() {
             while (true) {
                 String message = Network.getMessage(dis, null, log);
-                String[] split = (String[]) Arrays.stream(message.split(Common.Constants.separator)).filter(s -> !s.contentEquals("")).toArray();
+                String[] split = Common.splitOnSeparator(message, Common.Constants.separator);
                 if (split.length != 3) {
                     Network.send(Common.Constants.badMessage, dos, log);
                     continue;
                 }
                 switch (split[0]) {
                     case "post":
-                        boolean done = false;
                         synchronized (messages) {
-                            for (Messages m : messages
-                            ) {
-                                if (m.pseudo.equals(split[1])) {
-                                    m.messages.add(new Message(split[2]));
-                                    Network.send(Common.Constants.posted, dos, log);
-                                    done = true;
+                            LinkedList<Message> list = messages.get(split[1]);
+                            if (list == null) {
+                                Network.send("accountManager" + Common.Constants.separator + "get" + Common.Constants.separator + split[1], toMM, log);
+                                if (Boolean.parseBoolean(Network.getMessage(fromMM, null, log))) {
+                                    list = new LinkedList<>();
+                                    messages.put(split[1], list);
                                 }
                             }
-                            if (!done) {
-                                Messages mes = new Messages(split[1]);
-                                mes.messages.add(new Message(split[2]));
-                                messages.add(mes);
+                            if (list != null) {
+                                list.add(new Message(split[2]));
                                 Network.send(Common.Constants.posted, dos, log);
+                            } else {
+                                Network.send(Common.Constants.couldNotSendMessage, dos, log);
                             }
                         }
                         break;
                     case "get":
-                        boolean get = false;
+                        int minID = Integer.parseInt(split[2]);
+                        Network.send("followManager" + Common.Constants.separator + "get" + Common.Constants.separator + split[1], toMM, log);
+                        String[] followed = Network.getMessage(fromMM, null, log).substring(("ok" + Common.Constants.separator).length()).split(Common.Constants.separator);
+                        LinkedList<Message> newMessages = new LinkedList<>();
                         synchronized (messages) {
-                            for (Messages m : messages
-                            ) {
-                                if (m.pseudo.equals(split[1])) {
-                                    boolean startGet = false;
-                                    String allMessages = "ok ";
-                                    for (Message mes : m.messages
-                                         ) {
-                                        if (mes.id == Integer.parseInt(split[2]) || get) {
-                                            allMessages += mes.message;
-                                            get = true;
-                                        }
+                            for (String account : followed) {
+                                LinkedList<Message> me = messages.get(account);
+                                for (Message m : me) {
+                                    if (m.id >= minID) {
+                                        newMessages.add(m);
                                     }
-                                    Network.send("ok " + allMessages, dos, log);
                                 }
                             }
-                            if (!get) {
-                                Network.send(Common.Constants.cantGetMessages, dos, log);
-                            }
                         }
+                        newMessages.sort(Comparator.comparingLong(o -> o.id));
+                        StringBuilder res = new StringBuilder("ok");
+                        for (Message m : newMessages) {
+                            res.append(Common.Constants.separator).append(m.id).append(Common.Constants.separator).append(m.message);
+                        }
+                        Network.send(res.toString(), dos, log);
                         break;
                     default:
                         //TODO
@@ -163,5 +150,4 @@ public class MessageManager extends Thread{
             toMM = p.value;
         }
     }
-
 }

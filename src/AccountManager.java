@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.LinkedList;
 
 public class AccountManager extends Thread {
@@ -52,7 +51,7 @@ public class AccountManager extends Thread {
             try {
                 new WorkerThread(server.accept()).start();
             } catch (IOException | MissingConfigException ignored) {
-                System.out.println("crash du serveur");
+                System.out.println("crash du AM");
             }
         }
     }

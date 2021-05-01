@@ -3,7 +3,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 
 public class Client extends Thread {
     public static void main(String[] args) throws IOException {

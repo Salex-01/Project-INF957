@@ -29,6 +29,7 @@ public class Network {
         return new String(tmp);
     }
 
+    @SuppressWarnings("ConstantConditions")
     static String getMessage(DataInputStream dis, DataOutputStream dos, boolean log) {
         return getMessage(getSize(dis, dos, log), dis, dos, log);
     }

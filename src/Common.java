@@ -17,7 +17,6 @@ public class Common {
         static String couldNotReadSize = "Could not read message size";
         static String couldNotSendMessage = "Could not send message";
         static String posted = "Message successfully posted";
-        static String getMessage = "Message successfully got";
         static String followed = "Now following ";
         static String unfollowed = "Unfollowed ";
         static String messageWrongSize = "Could not read the specified number of bytes";

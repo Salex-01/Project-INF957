@@ -1,27 +1,16 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 
-public class FollowManager extends Thread{
-
+public class FollowManager extends Thread {
     ServerSocket server;
     boolean log = false;
     String moduleManagerHost;
     int moduleManagerPort;
-    String configFile = "./modulesConfig.txt";
-    final LinkedList<Follow> follows = new LinkedList<>();
-
-    class Follow {
-        String pseudo;
-        LinkedList<String> followList;
-
-        Follow(String pseudo) {
-            this.pseudo = pseudo;
-            followList = new LinkedList<String>();
-        }
-    }
+    String configFile = "modulesConfig.txt";
+    final HashMap<String, LinkedList<String>> follows = new HashMap<>();
 
     public static void main(String[] args) throws IOException, MissingConfigException {
         new FollowManager(args).start();
@@ -63,11 +52,11 @@ public class FollowManager extends Thread{
             try {
                 new FollowManager.WorkerThread(server.accept()).start();
             } catch (IOException | MissingConfigException ignored) {
-                System.out.println("crash du serveur");
+                System.out.println("crash du FM");
             }
         }
     }
-    
+
 
     private class WorkerThread extends Thread {
         Socket socket;
@@ -88,71 +77,61 @@ public class FollowManager extends Thread{
         public void run() {
             while (true) {
                 String message = Network.getMessage(dis, null, log);
-                String[] split = (String[]) Arrays.stream(message.split(Common.Constants.separator)).filter(s -> !s.contentEquals("")).toArray();
-                if (split.length < 2) {
+                String[] split = Common.splitOnSeparator(message, Common.Constants.separator);
+                if (split.length < 2 || split.length > 3) {
                     Network.send(Common.Constants.badMessage, dos, log);
                     continue;
                 }
                 switch (split[0]) {
                     case "add":
-                        boolean done = false;
+                        boolean ok = false;
                         synchronized (follows) {
-                            for (Follow f: follows
-                            ) {
-                                if (f.pseudo.equals(split[1])) {
-                                    if (f.followList.contains(split[2])) {
-                                        f.followList.add(split[2]);
-                                        Network.send(Common.Constants.followed, dos, log);
-                                        done = true;
-                                        break;
-                                    }
-                                    else {
-                                        Network.send(Common.Constants.cantFollow, dos, log);
-                                        done = true;
+                            boolean doFollow = follows.containsKey(split[1]);
+                            if (!doFollow) {
+                                Network.send("accountManager" + Common.Constants.separator + "get" + Common.Constants.separator + split[1], toMM, log);
+                                doFollow = Boolean.parseBoolean(Network.getMessage(fromMM, null, log));
+                            }
+                            if (doFollow) {
+                                doFollow = follows.containsKey(split[2]);
+                                if (!doFollow) {
+                                    Network.send("accountManager" + Common.Constants.separator + "get" + Common.Constants.separator + split[2], toMM, log);
+                                    doFollow = Boolean.parseBoolean(Network.getMessage(fromMM, null, log));
+                                }
+                                if (doFollow) {
+                                    LinkedList<String> list = follows.computeIfAbsent(split[1], k -> new LinkedList<>());
+                                    if (!list.contains(split[2])) {
+                                        list.add(split[2]);
+                                        ok = true;
                                     }
                                 }
                             }
-                            if (!done) {
-                                Follow newFollow = new Follow(split[1]);
-                                newFollow.followList.add(split[2]);
-                                follows.add(newFollow);
-                                Network.send(Common.Constants.followed, dos, log);
-                            }
+                        }
+                        if (ok) {
+                            Network.send("ok" + Common.Constants.followed + split[2], dos, log);
+                        } else {
+                            Network.send("failure : " + Common.Constants.cantFollow + split[2], dos, log);
                         }
                         break;
                     case "remove":
                         synchronized (follows) {
-                            for (Follow f: follows
-                            ) {
-                                if (f.pseudo.equals(split[1])) {
-                                    if (!f.followList.remove(split[2])) {
-                                        Network.send(Common.Constants.cantUnfollow, dos, log);
-                                    } else {
-                                        Network.send(Common.Constants.unfollowed, dos, log);
-                                    }
-                                }
+                            LinkedList<String> list = follows.get(split[1]);
+                            if (list != null && list.remove(split[2])) {
+                                Network.send("failure : " + Common.Constants.cantUnfollow + split[2], dos, log);
+                            } else {
+                                Network.send("ok" + Common.Constants.unfollowed + split[2], dos, log);
                             }
                         }
                         break;
                     case "get":
-                        boolean get = false;
                         synchronized (follows) {
-                            for (Follow f: follows
-                            ) {
-                                if (f.pseudo.equals(split[1])) {
-                                    String followslist = "";
-                                    for (String follow: f.followList
-                                         ) {
-                                        followslist += follow + " ";
-                                    }
-                                    Network.send("ok " + followslist, dos, log);
-                                    get = true;
-                                    break;
+                            LinkedList<String> list = follows.get(split[1]);
+                            StringBuilder res = new StringBuilder("ok");
+                            if (list != null) {
+                                for (String s : list) {
+                                    res.append(Common.Constants.separator).append(s);
                                 }
                             }
-                            if (!get) {
-                                Network.send(Common.Constants.cantGetMessages, dos, log);
-                            }
+                            Network.send(res.toString(), dos, log);
                         }
                         break;
                     default:
@@ -171,5 +150,4 @@ public class FollowManager extends Thread{
             toMM = p.value;
         }
     }
-
 }
