@@ -158,7 +158,7 @@ public class CentralServer extends Thread {
             }
             String response = Network.getMessage(fromMM, null, log);
             if (response != null && response.startsWith("ok")) {
-                return (successMessage != null ? successMessage : response.substring(2));
+                return (successMessage != null ? successMessage : response.substring(("ok" + Common.Constants.separator).length()));
             } else {
                 reconnectIfNull(response);
                 return failureMessage;

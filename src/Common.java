@@ -8,18 +8,18 @@ public class Common {
         static String accountCreated = "Account created";
         static String accountDeleted = "Account deleted";
         static String badMessage = "Message format is incorrect";
-        static String cantFollow = "Failed to follow ";
-        static String cantUnfollow = "Failed to unfollow ";
-        static String cantGetMessages = "Failed to get new messages";
-        static String cantPostMessage = "Failed to post this message";
-        static String couldNotCreateAccount = "Account creation failed";
-        static String couldNotDeleteAccount = "Account deletion failed";
-        static String couldNotReadSize = "Could not read message size";
-        static String couldNotSendMessage = "Could not send message";
+        static String cantFollow = "Failure : failed to follow ";
+        static String cantUnfollow = "Failure : failed to unfollow ";
+        static String cantGetMessages = "Failure : failed to get new messages";
+        static String cantPostMessage = "Failure : failed to post this message";
+        static String couldNotCreateAccount = "Failure : account creation failed";
+        static String couldNotDeleteAccount = "Failure : account deletion failed";
+        static String couldNotReadSize = "Failure : could not read message size";
+        static String couldNotSendMessage = "Failure : could not send message";
         static String posted = "Message successfully posted";
         static String followed = "Now following ";
         static String unfollowed = "Unfollowed ";
-        static String messageWrongSize = "Could not read the specified number of bytes";
+        static String messageWrongSize = "Failure : could not read the specified number of bytes";
         static String separator = ";\n";
     }
 

@@ -32,6 +32,12 @@ public class Client extends Thread {
         DataOutputStream os = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
         String[] testMessages = {
                 "new account" + Common.Constants.separator + "test",
+                "new account" + Common.Constants.separator + "test",
+                "new account" + Common.Constants.separator + "test2",
+                "follow" + Common.Constants.separator + "test2" + Common.Constants.separator + "test",
+                "post" + Common.Constants.separator + "test" + Common.Constants.separator + "ceci est un message",
+                "get" + Common.Constants.separator + "test2" + Common.Constants.separator + "0",
+                "unfollow" + Common.Constants.separator + "test2" + Common.Constants.separator + "test",
                 "delete account" + Common.Constants.separator + "test"
         };
         for (String message : testMessages) {

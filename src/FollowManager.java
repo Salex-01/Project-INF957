@@ -109,16 +109,16 @@ public class FollowManager extends Thread {
                         if (ok) {
                             Network.send("ok" + Common.Constants.followed + split[2], dos, log);
                         } else {
-                            Network.send("failure : " + Common.Constants.cantFollow + split[2], dos, log);
+                            Network.send(Common.Constants.cantFollow + split[2], dos, log);
                         }
                         break;
                     case "remove":
                         synchronized (follows) {
                             LinkedList<String> list = follows.get(split[1]);
                             if (list != null && list.remove(split[2])) {
-                                Network.send("failure : " + Common.Constants.cantUnfollow + split[2], dos, log);
-                            } else {
                                 Network.send("ok" + Common.Constants.unfollowed + split[2], dos, log);
+                            } else {
+                                Network.send(Common.Constants.cantUnfollow + split[2], dos, log);
                             }
                         }
                         break;

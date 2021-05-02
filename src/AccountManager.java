@@ -102,7 +102,7 @@ public class AccountManager extends Thread {
                         break;
                     case "get":
                         synchronized (accounts) {
-                            Network.send("ok" + accounts.contains(split[1]), dos, log);
+                            Network.send("" + accounts.contains(split[1]), dos, log);
                         }
                         break;
                     default:

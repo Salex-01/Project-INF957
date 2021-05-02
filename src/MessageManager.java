@@ -106,7 +106,7 @@ public class MessageManager extends Thread {
                             }
                             if (list != null) {
                                 list.add(new Message(split[2]));
-                                Network.send(Common.Constants.posted, dos, log);
+                                Network.send("ok" + Common.Constants.posted, dos, log);
                             } else {
                                 Network.send(Common.Constants.couldNotSendMessage, dos, log);
                             }
