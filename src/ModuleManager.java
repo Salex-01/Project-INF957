@@ -6,14 +6,14 @@ import java.util.HashMap;
 public class ModuleManager extends Thread {
     ServerSocket server;
     boolean log = false;
+    // Connexions vers les modules
     final HashMap<String, Pair<DataInputStream, DataOutputStream>> moduleConnections = new HashMap<>();
-    String configFile = "modulesConfig.txt";
+    String configFile = "modulesConfig.txt";    // Fichier de configuration
 
     public static void main(String[] args) throws IOException, MissingConfigException {
         new ModuleManager(args).start();
     }
 
-    @SuppressWarnings("deprecation")
     public ModuleManager(String[] args) throws IOException, MissingConfigException {
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -29,37 +29,27 @@ public class ModuleManager extends Thread {
                     System.exit(-1);
             }
         }
-        int port;
-        DataInputStream cf = new DataInputStream(new FileInputStream(configFile));
-        String line = cf.readLine();
-        while (line != null && !line.startsWith("moduleManager")) {
-            line = cf.readLine();
-        }
-        if (line == null) {
-            throw new MissingConfigException();
-        }
-        String[] split = line.split(" ");
-        port = Integer.parseInt(split[split.length - 1]);
-        server = new ServerSocket(port);
-        refreshServices();
+        server = new ServerSocket(Common.getPort(configFile,"moduleManager"));  // Ouverture du socket du service
+        refreshServices();  // Connexion aux services
     }
 
     @Override
     @SuppressWarnings("InfiniteLoopStatement")
     public void run() {
+        // Accepte en boucle toutes les connexions et crée un thread pour s'occuper de chaque connexion
         while (true) {
             try {
                 new WorkerThread(server.accept()).start();
             } catch (IOException ignored) {
-                System.out.println("crash du MM");
+                System.out.println("crash du MoM");
             }
         }
     }
 
     private class WorkerThread extends Thread {
         Socket socket;
-        DataInputStream dis;
-        DataOutputStream dos;
+        DataInputStream dis;    // InputStream de la connexion
+        DataOutputStream dos;   // OutputStream de la connexion
 
         public WorkerThread(Socket s) throws IOException {
             socket = s;
@@ -69,43 +59,40 @@ public class ModuleManager extends Thread {
 
         @Override
         public void run() {
-            int consecutiveFailures = 0;
             while (true) {
                 String inMessage;
                 try {
-                    inMessage = Network.getMessage(dis, dos, log);
+                    inMessage = Network.getMessage(dis, log);  // Récupération du message
                 } catch (Exception e) {
-                    consecutiveFailures++;
-                    Network.send(Common.Constants.badMessage, dos, log);
-                    if (consecutiveFailures == 10) {
-                        return;
-                    }
-                    continue;
+                    return; // Connexion coupée
                 }
-                consecutiveFailures = 0;
                 int index = inMessage.indexOf(Common.Constants.separator);
                 String destination = inMessage.substring(0, index);
                 String message = inMessage.substring(index + Common.Constants.separator.length());
                 String outMessage;
                 Pair<DataInputStream, DataOutputStream> service;
                 synchronized (moduleConnections) {
+                    // Récupération du service auquel le message est destiné
                     service = moduleConnections.get(destination);
                 }
+                // Envoi du message
                 if (service == null || !Network.send(message, service.value, log)) {
                     refreshServices();
                     if (service == null || !Network.send(message, service.value, log)) {
                         outMessage = "failure : unreachable";
                     } else {
-                        outMessage = Network.getMessage(service.key, null, log);
+                        outMessage = Network.getMessage(service.key, log);
                     }
                 } else {
-                    outMessage = Network.getMessage(service.key, null, log);
+                    outMessage = Network.getMessage(service.key, log);
                 }
+                // Envoi de la réponse
                 Network.send(outMessage, dos, log);
             }
         }
     }
 
+    // Connexion aux services
     @SuppressWarnings("deprecation")
     private void refreshServices() {
         boolean tem;

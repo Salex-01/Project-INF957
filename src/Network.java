@@ -3,6 +3,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class Network {
+    // Retourne la taille du premier message disponible dans dis
     static Integer getSize(DataInputStream dis, DataOutputStream dos, boolean log) {
         try {
             return dis.readInt();
@@ -12,6 +13,7 @@ public class Network {
         }
     }
 
+    // Retourne le message composé des size premiers octets disponibles dans dis
     static String getMessage(int size, DataInputStream dis, DataOutputStream dos, boolean log) {
         byte[] tmp = new byte[size];
         for (int i = 0; i < size; ) {
@@ -29,11 +31,13 @@ public class Network {
         return new String(tmp);
     }
 
+    // Retourne le premier message disponible dans dis
     @SuppressWarnings("ConstantConditions")
-    static String getMessage(DataInputStream dis, DataOutputStream dos, boolean log) {
-        return getMessage(getSize(dis, dos, log), dis, dos, log);
+    static String getMessage(DataInputStream dis, boolean log) {
+        return getMessage(getSize(dis, null, log), dis, null, log);
     }
 
+    // Envoie message dans dos
     static boolean send(String message, DataOutputStream dos, boolean log) {
         try {
             dos.writeInt(message.getBytes().length);

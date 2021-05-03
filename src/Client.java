@@ -42,7 +42,7 @@ public class Client extends Thread {
         };
         for (String message : testMessages) {
             Network.send(message, os, false);
-            System.out.println(Network.getMessage(is, null, false));
+            System.out.println(Network.getMessage(is, false));
         }
     }
 }

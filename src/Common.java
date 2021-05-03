@@ -23,6 +23,7 @@ public class Common {
         static String separator = ";\n";
     }
 
+    // Récupération des paramètres du module manager
     @SuppressWarnings("deprecation")
     static Pair<String, Integer> getMMparams(String configFile, ServerSocket server) throws IOException, MissingConfigException {
         DataInputStream cf;
@@ -42,10 +43,9 @@ public class Common {
         return new Pair<>(moduleManagerHost, moduleManagerPort);
     }
 
+    // Récupération du port associé au module demandé
     @SuppressWarnings("deprecation")
     static int getPort(String configFile, String module) throws IOException, MissingConfigException {
-        int port;
-        System.out.println(new File(configFile).getAbsolutePath());
         DataInputStream cf = new DataInputStream(new FileInputStream(configFile));
         String line = cf.readLine();
         while (line != null && !line.startsWith(module)) {
@@ -56,10 +56,10 @@ public class Common {
             throw new MissingConfigException();
         }
         String[] split = splitOnSeparator(line, " ");
-        port = Integer.parseInt(split[split.length - 1]);
-        return port;
+        return Integer.parseInt(split[split.length - 1]);
     }
 
+    // Renvoie les String non vides rendues par le split de base sur sep
     static String[] splitOnSeparator(String base, String sep) {
         return toStringArray(Arrays.stream(base.trim().split(sep)).filter(s -> !s.contentEquals("")).toArray());
     }
@@ -72,6 +72,7 @@ public class Common {
         return res;
     }
 
+    // Ouvre une connexion vers le module manager
     static Pair<DataInputStream, DataOutputStream> connectToMM(DataInputStream fromMM, DataOutputStream toMM, String moduleManagerHost, int moduleManagerPort) throws IOException {
         if (fromMM != null) {
             fromMM.close();

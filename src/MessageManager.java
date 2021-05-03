@@ -42,16 +42,18 @@ public class MessageManager extends Thread {
                     System.exit(-1);
             }
         }
-        server = new ServerSocket(getPort());
-        getMMparams();
+        server = new ServerSocket(getPort());   // Ouverture du socket du service
+        getMMparams();  // Récupération des informations de connexion au module manager
     }
 
+    // Définit les paramètres de connexion au module manager
     private void getMMparams() throws IOException, MissingConfigException {
         Pair<String, Integer> p = Common.getMMparams(configFile, server);
         moduleManagerHost = p.key;
         moduleManagerPort = p.value;
     }
 
+    // Trouve le port sur lequel doit se lancer ce service
     private int getPort() throws IOException, MissingConfigException {
         return Common.getPort(configFile, "messageManager");
     }
@@ -59,22 +61,22 @@ public class MessageManager extends Thread {
     @Override
     @SuppressWarnings("InfiniteLoopStatement")
     public void run() {
+        // Accepte en boucle toutes les connexions et crée un thread pour s'occuper de chaque connexion
         while (true) {
             try {
                 new MessageManager.WorkerThread(server.accept()).start();
             } catch (IOException | MissingConfigException ignored) {
-                System.out.println("crash du Mesmer");
+                System.out.println("crash du MeM");
             }
         }
     }
 
-
     private class WorkerThread extends Thread {
         Socket socket;
-        DataInputStream dis;
-        DataOutputStream dos;
-        DataInputStream fromMM;
-        DataOutputStream toMM;
+        DataInputStream dis;    // InputStream de la connexion
+        DataOutputStream dos;   // OutputStream de la connexion
+        DataInputStream fromMM; // InputStream depuis le module manager
+        DataOutputStream toMM;  // OutputStream vers le module manager
 
         public WorkerThread(Socket s) throws IOException, MissingConfigException {
             socket = s;
@@ -84,22 +86,26 @@ public class MessageManager extends Thread {
         }
 
         @Override
-        @SuppressWarnings("InfiniteLoopStatement")
         public void run() {
             while (true) {
-                String message = Network.getMessage(dis, null, log);
+                String message;
+                try {
+                    message = Network.getMessage(dis, log);   // Récupération du message reçu
+                } catch (Exception e) {
+                    return; // Si la connexion a été coupée
+                }
                 String[] split = Common.splitOnSeparator(message, Common.Constants.separator);
                 if (split.length != 3) {
                     Network.send(Common.Constants.badMessage, dos, log);
                     continue;
                 }
                 switch (split[0]) {
-                    case "post":
+                    case "post":    // Envoi d'un message
                         synchronized (messages) {
                             LinkedList<Message> list = messages.get(split[1]);
-                            if (list == null) {
+                            if (list == null) { // Si le compte n'a encore rien posté
                                 Network.send("accountManager" + Common.Constants.separator + "get" + Common.Constants.separator + split[1], toMM, log);
-                                if (Boolean.parseBoolean(Network.getMessage(fromMM, null, log))) {
+                                if (Boolean.parseBoolean(Network.getMessage(fromMM, log))) {
                                     list = new LinkedList<>();
                                     messages.put(split[1], list);
                                 }
@@ -112,11 +118,13 @@ public class MessageManager extends Thread {
                             }
                         }
                         break;
-                    case "get":
+                    case "get": // Récupération de messages
                         int minID = Integer.parseInt(split[2]);
+                        // Récupération de la liste des abonnements du demandeur
                         Network.send("followManager" + Common.Constants.separator + "get" + Common.Constants.separator + split[1], toMM, log);
-                        String[] followed = Network.getMessage(fromMM, null, log).substring(("ok" + Common.Constants.separator).length()).split(Common.Constants.separator);
+                        String[] followed = Network.getMessage(fromMM, log).substring(("ok" + Common.Constants.separator).length()).split(Common.Constants.separator);
                         LinkedList<Message> newMessages = new LinkedList<>();
+                        // Récupération de tous les messages qui doivent l'être
                         synchronized (messages) {
                             for (String account : followed) {
                                 LinkedList<Message> me = messages.get(account);
@@ -141,6 +149,7 @@ public class MessageManager extends Thread {
             }
         }
 
+        // Ouverture d'une connexion vers le module manager
         private void connectToMM() throws IOException, MissingConfigException {
             if (fromMM != null || toMM != null) {
                 getMMparams();
