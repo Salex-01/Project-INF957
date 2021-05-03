@@ -84,7 +84,7 @@ public class CentralServer extends Thread {
                 }
                 String inMessage = Network.getMessage(size, dis, dos, log);
                 if (inMessage == null) {
-                    continue;   // Si le message est mal formatté
+                    continue;   // Si le message est mal formaté
                 }
                 String[] message = Common.splitOnSeparator(inMessage, Common.Constants.separator);
                 String outMessage;
